@@ -1,0 +1,18 @@
+[project]
+name = "omnigram"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8.2",
+    "black>=25.1.0",
+    "flake8>=7.1.1",
+    "isort>=6.0.0",
+    "mypy>=1.15.0",
+    "pyright>=1.1.393",
+    "ruff>=0.9.5",
+]
