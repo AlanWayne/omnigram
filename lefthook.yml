@@ -1,0 +1,30 @@
+pre-commit:
+  parallel: true
+  commands:
+    bandit:
+      run: bandit -r .
+      glob: "*.py"
+
+    black:
+      run: black --check .
+      glob: "*.py"
+
+    flake8:
+      run: flake8 .
+      glob: "*.py"
+
+    isort:
+      run: isort --check-only .
+      glob: "*.py"
+
+    mypy:
+      run: mypy .
+      glob: "*.py"
+
+    pyright:
+      run: pyright
+      glob: "*.py"
+
+    ruff:
+      run: ruff check .
+      glob: "*.py"
