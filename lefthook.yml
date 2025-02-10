@@ -1,0 +1,22 @@
+colors: true
+
+pre-commit:
+
+  parallel: false
+
+  commands:
+
+    ruff:
+      run: ruff format --force-exclude {staged_files}
+      glob: "*.py"
+      priority: 1
+
+    flake8:
+      run: flake8 {staged_files}
+      glob: "*.py"
+      priority: 2
+
+    mypy:
+      run: mypy {staged_files}
+      glob: "*.py"
+      priority: 3
