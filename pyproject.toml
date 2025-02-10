@@ -3,15 +3,16 @@ name = "omnigram"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
     "aiogram>=3.17.0",
-    "lefthook>=1.10.10",
     "pydantic-settings>=2.7.1",
+    "vkbottle>=4.4.3.post1",
 ]
 
 [dependency-groups]
 dev = [
+    "lefthook>=1.10.10",
     "bandit>=1.8.2",
     "flake8>=7.1.1",
     "isort>=6.0.0",

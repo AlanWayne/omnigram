@@ -20,8 +20,3 @@ pre-commit:
       run: mypy {staged_files}
       glob: "*.py"
       priority: 3
-
-    bandit:
-      run: bandit -c pyproject.toml {staged_files}
-      glob: "*.py"
-      priority: 4

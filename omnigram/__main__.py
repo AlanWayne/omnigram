@@ -1,7 +1,7 @@
-# from aiogram import Bot
+import asyncio
+import logging
+import sys
+from .handler import handler
 
-from .config import config
-
-
-# bot = Bot(token=config.telegram.token)
-print(config.telegram)
+logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+asyncio.run(handler())
