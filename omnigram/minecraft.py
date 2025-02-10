@@ -46,6 +46,8 @@ class MinecraftServer:
             output = line.decode().strip()
             if "of a max of 20 players online" in output:
                 self.people_online = output.split()[5]
+            elif "Server empty for 60 seconds, pausing" in output:
+                await self.terminate()
             else:
                 print(output)
 
