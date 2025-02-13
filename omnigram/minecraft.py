@@ -63,7 +63,10 @@ class MinecraftServer:
 
     async def terminate(self):
         if self._server:
-            self._server.terminate()
+            self._server.stdin.write("stop\n".encode())
+            await self._server.stdin.drain()
+            await asyncio.sleep(5)
+            # self._server.terminate()
             await self._server.wait()
             self._server = None
 
