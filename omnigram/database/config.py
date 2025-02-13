@@ -9,7 +9,6 @@ from sqlalchemy import (
     DateTime,
     Boolean,
 )
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 if TYPE_CHECKING:
@@ -17,8 +16,13 @@ if TYPE_CHECKING:
     from sqlalchemy.orm.session import Session
 
 engine = create_engine(f"sqlite:///{config.database.name}.db", echo=True)
-Base = declarative_base()
-SyncSession: sessionmaker[Session] = sessionmaker(bind=engine)
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+SyncSession: "sessionmaker[Session]" = sessionmaker(bind=engine)
 
 
 class MessageModel(DeclarativeBase):
