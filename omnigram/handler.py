@@ -6,6 +6,8 @@ from aiogram.filters import Command
 from aiogram.types import ChatMemberAdministrator, ChatMemberOwner
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from apscheduler.schedulers.asyncio import AsyncIOScheduler # type: ignore
+from apscheduler.triggers.cron import CronTrigger # type: ignore
 
 from .database.config import get_session
 from .minecraft import MinecraftServer
@@ -27,6 +29,13 @@ dispatcher.include_router(router)
 
 
 async def handler() -> None:
+    await delete_messages()
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        delete_messages,
+        CronTrigger(hour=0, minute=0),
+    )
+    scheduler.start()
     await dispatcher.start_polling(bot)
 
 
