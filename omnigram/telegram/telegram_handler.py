@@ -92,9 +92,7 @@ class TelegramHandler:
 
         for message in messages:
             try:
-                chat_id = cast(int, message.chat_id)
-                message_id = cast(int, message.id)
-                await self.bot.delete_message(chat_id=chat_id, message_id=message_id)
+                await self.bot.delete_message(chat_id=cast(int, message.chat_id), message_id=cast(int, message.id))
             except Exception as e:
                 print("Message delete:", e)
 
