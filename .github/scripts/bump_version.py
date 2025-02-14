@@ -1,5 +1,6 @@
 import os
 import tomllib
+import tomli_w
 
 # Заголовок PR передаётся через переменную окружения
 pr_title = os.getenv("PR_TITLE", "").lower()
@@ -34,7 +35,7 @@ new_version = f"{major}.{minor}.{patch}"
 config["project"]["version"] = new_version
 
 # Записываем новую версию обратно в pyproject.toml
-with open("pyproject.toml", "w") as f:
-    f.write(f'[project]\nversion = "{new_version}"\n')
+with open("pyproject.toml", "wb") as f:
+    tomli_w.dump(config, f)
 
 print(f"✅ Версия обновлена: {version} → {new_version}")
