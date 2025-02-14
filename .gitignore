@@ -170,3 +170,6 @@ uv.lock
 
 # PyPI configuration file
 .pypirc
+
+# Database
+*.db

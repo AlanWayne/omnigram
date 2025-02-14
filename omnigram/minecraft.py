@@ -1,6 +1,7 @@
 import asyncio
 import subprocess
 from omnigram.config import config
+from omnigram.factory.telegram import bot
 
 
 class MinecraftServer:
@@ -38,6 +39,29 @@ class MinecraftServer:
             asyncio.create_task(self._read_stream(self._server.stdout))
             asyncio.create_task(self._read_stream(self._server.stderr))
 
+    @staticmethod
+    async def send_message_to_telegram(text: str):
+        text = text.replace("<", "[")
+        text = text.replace(">", "]")
+        output = text.split()
+        output = output[5:]
+        text = " ".join(output)
+
+        print(text)
+        await bot.send_message(
+            chat_id=config.telegram.group_mc,
+            message_thread_id=config.telegram.topic_mc_minecraft_chat,
+            text=text,
+        )
+
+    async def send_message_to_minecraft(self, user: str, text: str):
+        if self._server is not None:
+            self._server.stdin.write(
+                f'tellraw @a "<{user}>: {text}"\n'.encode()
+            )
+            await self._server.stdin.drain()
+            await asyncio.sleep(1)
+
     async def _read_stream(self, stream):
         while True:
             line = await stream.readline()
@@ -46,6 +70,11 @@ class MinecraftServer:
             output = line.decode().strip()
             if "of a max of 20 players online" in output:
                 self.people_online = output.split()[5]
+            elif "Server empty for 60 seconds, pausing" in output:
+                await self.terminate()
+            elif "[Not Secure] <" in output:
+                await self.send_message_to_telegram(text=output)
+                print(output)
             else:
                 print(output)
 
@@ -60,8 +89,11 @@ class MinecraftServer:
             self._task = asyncio.create_task(self._launch())
 
     async def terminate(self):
-        if self._server:
-            self._server.terminate()
+        if self._server is not None:
+            self._server.stdin.write("stop\n".encode())
+            await self._server.stdin.drain()
+            await asyncio.sleep(5)
+            # self._server.terminate()
             await self._server.wait()
             self._server = None
 
