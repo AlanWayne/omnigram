@@ -1,0 +1,42 @@
+name: Bump Version on Merge
+
+on:
+  pull_request:
+    types:
+      - closed  # Запускаем при закрытии PR
+
+permissions:
+  contents: write  # Даем права на пуш изменений
+
+jobs:
+  bump-version:
+    if: github.event.pull_request.merged == true  # Запускаем только если PR смержен
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: 🐍 Установить Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Bump version in pyproject.toml
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}  # Получаем заголовок PR
+        run: python .github/scripts/bump_version.py
+
+      - name: Commit
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions@github.com"
+          git add pyproject.toml
+          git commit -m "🔖 Авто-обновление версии после PR: ${{ github.event.pull_request.title }}"
+          git push origin main
+
+      - name: Create tag
+        run: |
+          NEW_VERSION=$(grep -Po '(?<=version = ")[^"]*' pyproject.toml)
+          git tag "v$NEW_VERSION"
+          git push origin "v$NEW_VERSION"
