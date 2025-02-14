@@ -1,4 +1,0 @@
-root = True
-
-[*]
-max_line_length = 120
