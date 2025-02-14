@@ -39,6 +39,6 @@ jobs:
 
       - name: Create tag
         run: |
-          NEW_VERSION=$(grep -Po '(?<=version = ")[^"]*' pyproject.toml)
+          NEW_VERSION=$(sed -n 's/^version = "\([0-9]\+\.[0-9]\+\.[0-9]\+\)".*/\1/p' pyproject.toml)
           git tag "v$NEW_VERSION"
           git push origin "v$NEW_VERSION"
