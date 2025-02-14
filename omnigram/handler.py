@@ -1,31 +1,21 @@
 import asyncio
 from typing import TYPE_CHECKING
 
-from aiogram import Router, Bot, Dispatcher
 from aiogram.filters import Command
 from aiogram.types import ChatMemberAdministrator, ChatMemberOwner
-from aiogram.client.default import DefaultBotProperties
-from aiogram.enums import ParseMode
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from apscheduler.triggers.cron import CronTrigger  # type: ignore
 
+from .config import config
 from .database.config import get_session
 from .minecraft import MinecraftServer
-from .config import config
-from .validators import validate_console
+from .validators import validate_console, validate_minecraft_chat
 from omnigram.database.config import MessageModel
+from omnigram.factory.telegram import dispatcher, bot, router
 
 if TYPE_CHECKING:
     from aiogram.types import Message
     from sqlalchemy.orm.session import Session
-
-router = Router()
-bot = Bot(
-    token=config.telegram.token,
-    default=DefaultBotProperties(parse_mode=ParseMode.HTML),
-)
-dispatcher = Dispatcher()
-dispatcher.include_router(router)
 
 
 async def handler() -> None:
@@ -187,6 +177,29 @@ async def command_clear(message: "Message") -> None:
 
 
 @router.message()
+async def not_a_command(message: "Message") -> None:
+    if message.message_thread_id == config.telegram.topic_mc_console:
+        return await command_invalid(message=message)
+    elif message.message_thread_id == config.telegram.topic_mc_minecraft_chat:
+        return await minecraft_chat_listener(message=message)
+
+
+@validate_minecraft_chat()
+async def minecraft_chat_listener(message: "Message") -> None:
+    if message.from_user is not None:
+        user = message.from_user.full_name
+        text = message.text
+
+        if text is not None:
+            minecraft_server = MinecraftServer()
+            if minecraft_server.status().startswith("Active"):
+                await minecraft_server.send_message_to_minecraft(
+                    user=user, text=text
+                )
+            else:
+                await message.answer("⚠️ В данный момент сервер не работает.")
+
+
 @validate_console()
 async def command_invalid(message: "Message") -> None:
     response = await message.answer(

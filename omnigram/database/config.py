@@ -25,7 +25,7 @@ class Base(DeclarativeBase):
 SyncSession: "sessionmaker[Session]" = sessionmaker(bind=engine)
 
 
-class MessageModel(DeclarativeBase):
+class MessageModel(Base):
     __tablename__ = "message"
 
     id = Column(Integer, primary_key=True)

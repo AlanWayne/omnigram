@@ -7,6 +7,7 @@ class TelegramSettings(BaseSettings):
     token: str = ""
     group_mc: int
     topic_mc_console: int
+    topic_mc_minecraft_chat: int
 
     model_config: ClassVar[SettingsConfigDict] = SettingsConfigDict(
         env_prefix="TG_",
