@@ -32,7 +32,7 @@ pre-commit:
       priority: 5
 
     lint-mypy:
-      run: mypy {staged_files}
+      run: mypy --disallow-untyped-defs {staged_files}
       glob: "*.py"
       priority: 6
 
