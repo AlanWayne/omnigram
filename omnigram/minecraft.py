@@ -1,7 +1,12 @@
 import asyncio
 import subprocess
+from typing import TYPE_CHECKING
+
 from omnigram.config import config
 from omnigram.factory.telegram import bot
+
+if TYPE_CHECKING:
+    from asyncio.streams import StreamReader
 
 
 class MinecraftServer:
@@ -10,14 +15,14 @@ class MinecraftServer:
     _task = None
     _stdout_queue: asyncio.Queue = asyncio.Queue()
     _stderr_queue: asyncio.Queue = asyncio.Queue()
-    people_online = None
+    people_online: int = 0
 
-    def __new__(cls):
+    def __new__(cls) -> "MinecraftServer":
         if cls._instance is None:
             cls._instance = super(MinecraftServer, cls).__new__(cls)
         return cls._instance
 
-    async def _launch(self):
+    async def _launch(self) -> None:
         if not self._server:
             self._server = await asyncio.create_subprocess_exec(
                 "sudo",
@@ -30,17 +35,23 @@ class MinecraftServer:
                 stderr=subprocess.PIPE,
             )
 
-            async def send_password():
-                self._server.stdin.write(f"{config.admin.sudo}\n".encode())
-                await self._server.stdin.drain()
+            async def send_password() -> None:
+                if self._server is not None and self._server.stdin is not None:
+                    self._server.stdin.write(f"{config.admin.sudo}\n".encode())
+                    await self._server.stdin.drain()
 
             await send_password()
 
-            asyncio.create_task(self._read_stream(self._server.stdout))
-            asyncio.create_task(self._read_stream(self._server.stderr))
+            if (
+                self._server is not None
+                and self._server.stdout is not None
+                and self._server.stderr is not None
+            ):
+                asyncio.create_task(self._read_stream(self._server.stdout))
+                asyncio.create_task(self._read_stream(self._server.stderr))
 
     @staticmethod
-    async def send_message_to_telegram(text: str):
+    async def send_message_to_telegram(text: str) -> None:
         text = text.replace("<", "[")
         text = text.replace(">", "]")
         output = text.split()
@@ -54,46 +65,50 @@ class MinecraftServer:
             text=text,
         )
 
-    async def send_message_to_minecraft(self, user: str, text: str):
-        if self._server is not None:
+    async def send_message_to_minecraft(self, user: str, text: str) -> None:
+        if self._server is not None and self._server.stdin is not None:
             self._server.stdin.write(
                 f'tellraw @a "<{user}>: {text}"\n'.encode()
             )
             await self._server.stdin.drain()
             await asyncio.sleep(1)
 
-    async def _read_stream(self, stream):
+    async def _read_stream(self, stream: "StreamReader") -> None:
         while True:
             line = await stream.readline()
             if not line:
                 break
             output = line.decode().strip()
             if "of a max of 20 players online" in output:
-                self.people_online = output.split()[5]
+                self.people_online = (
+                    int(output.split()[5])
+                    if output.split()[5] is not None
+                    else 0
+                )
             elif "Server empty for 60 seconds, pausing" in output:
                 await self.terminate()
             elif "[Not Secure] <" in output:
                 await self.send_message_to_telegram(text=output)
-                print(output)
             else:
                 print(output)
 
-    async def list(self):
-        self._server.stdin.write("list\n".encode())
-        await self._server.stdin.drain()
-        await asyncio.sleep(1)
-        return self.people_online
+    async def list(self) -> int | None:
+        if self._server is not None and self._server.stdin is not None:
+            self._server.stdin.write("list\n".encode())
+            await self._server.stdin.drain()
+            await asyncio.sleep(1)
+            return self.people_online
+        return None
 
-    def launch(self):
+    def launch(self) -> None:
         if self._task is None or self._task.done():
             self._task = asyncio.create_task(self._launch())
 
-    async def terminate(self):
-        if self._server is not None:
+    async def terminate(self) -> None:
+        if self._server is not None and self._server.stdin is not None:
             self._server.stdin.write("stop\n".encode())
             await self._server.stdin.drain()
             await asyncio.sleep(5)
-            # self._server.terminate()
             await self._server.wait()
             self._server = None
 
@@ -104,10 +119,10 @@ class MinecraftServer:
             except asyncio.CancelledError:
                 pass
 
-    def status(self):
-        if self._server:
+    def status(self) -> str:
+        if self._server is not None:
             return "Active ✅"
         return "Terminated ❌"
 
-    def __del__(self):
+    def __del__(self) -> None:
         asyncio.run(self.terminate())

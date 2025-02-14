@@ -6,17 +6,37 @@ pre-commit:
 
   commands:
 
-    ruff:
-      run: ruff format --force-exclude {staged_files}
+    format-ruff-check:
+      run: ruff format --force-exclude --check {staged_files}
       glob: "*.py"
       priority: 1
 
-    flake8:
-      run: flake8 {staged_files}
+    format-ruff-isort:
+      run: ruff check --force-exclude --select I --fix {staged_files}
       glob: "*.py"
       priority: 2
 
-    mypy:
-      run: mypy {staged_files}
+    format-ruff:
+      run: ruff format --force-exclude {staged_files}
       glob: "*.py"
       priority: 3
+
+    lint-ruff:
+      run: ruff check --force-exclude --preview {staged_files}
+      glob: "*.py"
+      priority: 4
+
+    lint-flake8:
+      run: flake8 {staged_files}
+      glob: "*.py"
+      priority: 5
+
+    lint-mypy:
+      run: mypy --disallow-untyped-defs {staged_files}
+      glob: "*.py"
+      priority: 6
+
+    lint-pyright:
+      run: pyright {staged_files}
+      glob: "*.py"
+      priority: 7
