@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 class MinecraftServer:
     _server = None
-    _task: "Task"
+    _task: "Task | None" = None
     _people_online: int = 0
     _telegram_handler: "TelegramHandler"
 
