@@ -17,10 +17,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: 🐍 Install Python
+      - name: Install Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.13"
+      - name: Install dependencies
+        uses: pip install tomli_w
 
       - name: Bump version in pyproject.toml
         env:
