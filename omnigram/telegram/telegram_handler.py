@@ -11,6 +11,7 @@ from apscheduler.triggers.cron import CronTrigger  # type: ignore
 
 from omnigram.config import config
 from omnigram.database import MessageModel, get_session
+
 from .validators import validate_console, validate_minecraft_chat
 
 if TYPE_CHECKING:

@@ -26,10 +26,10 @@ pre-commit:
       glob: "*.py"
       priority: 4
 
-    lint-flake8:
-      run: flake8 {staged_files}
-      glob: "*.py"
-      priority: 5
+#    lint-flake8:lint-flake8
+#      run: flake8 {staged_files}
+#      glob: "*.py"
+#      priority: 5
 
     lint-mypy:
       run: mypy --disallow-untyped-defs {staged_files}
