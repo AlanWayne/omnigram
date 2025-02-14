@@ -9,6 +9,7 @@ dependencies = [
     "apscheduler>=3.11.0",
     "pydantic-settings>=2.7.1",
     "sqlalchemy>=2.0.38",
+    "tomli-w>=1.2.0",
 ]
 
 [dependency-groups]
