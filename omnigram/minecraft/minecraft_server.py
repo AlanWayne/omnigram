@@ -3,24 +3,18 @@ import subprocess
 from typing import TYPE_CHECKING
 
 from omnigram.config import config
-from omnigram.factory.telegram import bot
+from omnigram.telegram import TelegramHandler
 
 if TYPE_CHECKING:
+    from asyncio import Task
     from asyncio.streams import StreamReader
 
 
 class MinecraftServer:
-    _instance = None
     _server = None
-    _task = None
-    _stdout_queue: asyncio.Queue = asyncio.Queue()
-    _stderr_queue: asyncio.Queue = asyncio.Queue()
-    people_online: int = 0
-
-    def __new__(cls) -> "MinecraftServer":
-        if cls._instance is None:
-            cls._instance = super(MinecraftServer, cls).__new__(cls)
-        return cls._instance
+    _task: "Task"
+    _people_online: int = 0
+    _telegram_handler: "TelegramHandler"
 
     async def _launch(self) -> None:
         if not self._server:
@@ -42,16 +36,11 @@ class MinecraftServer:
 
             await send_password()
 
-            if (
-                self._server is not None
-                and self._server.stdout is not None
-                and self._server.stderr is not None
-            ):
+            if self._server is not None and self._server.stdout is not None and self._server.stderr is not None:
                 asyncio.create_task(self._read_stream(self._server.stdout))
                 asyncio.create_task(self._read_stream(self._server.stderr))
 
-    @staticmethod
-    async def send_message_to_telegram(text: str) -> None:
+    async def send_message_to_telegram(self, text: str) -> None:
         text = text.replace("<", "[")
         text = text.replace(">", "]")
         output = text.split()
@@ -59,7 +48,7 @@ class MinecraftServer:
         text = " ".join(output)
 
         print(text)
-        await bot.send_message(
+        await self._telegram_handler.bot.send_message(
             chat_id=config.telegram.group_mc,
             message_thread_id=config.telegram.topic_mc_minecraft_chat,
             text=text,
@@ -67,9 +56,7 @@ class MinecraftServer:
 
     async def send_message_to_minecraft(self, user: str, text: str) -> None:
         if self._server is not None and self._server.stdin is not None:
-            self._server.stdin.write(
-                f'tellraw @a "<{user}>: {text}"\n'.encode()
-            )
+            self._server.stdin.write(f'tellraw @a "<{user}>: {text}"\n'.encode())
             await self._server.stdin.drain()
             await asyncio.sleep(1)
 
@@ -80,11 +67,7 @@ class MinecraftServer:
                 break
             output = line.decode().strip()
             if "of a max of 20 players online" in output:
-                self.people_online = (
-                    int(output.split()[5])
-                    if output.split()[5] is not None
-                    else 0
-                )
+                self._people_online = int(output.split()[5]) if output.split()[5] is not None else 0
             elif "Server empty for 60 seconds, pausing" in output:
                 await self.terminate()
             elif "[Not Secure] <" in output:
@@ -97,7 +80,7 @@ class MinecraftServer:
             self._server.stdin.write("list\n".encode())
             await self._server.stdin.drain()
             await asyncio.sleep(1)
-            return self.people_online
+            return self._people_online
         return None
 
     def launch(self) -> None:

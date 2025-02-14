@@ -1,28 +1,29 @@
-from typing import TYPE_CHECKING
 from datetime import datetime
-from omnigram.config import config
+from typing import TYPE_CHECKING
+
 from sqlalchemy import (
-    create_engine,
+    Boolean,
     Column,
+    DateTime,
     Integer,
     String,
-    DateTime,
-    Boolean,
+    create_engine,
 )
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, sessionmaker
+
+from omnigram.config import config
 
 if TYPE_CHECKING:
     from typing import Generator
+
     from sqlalchemy.orm.session import Session
 
 engine = create_engine(f"sqlite:///{config.database.name}.db", echo=True)
+SyncSession: "sessionmaker[Session]" = sessionmaker(bind=engine)
 
 
 class Base(DeclarativeBase):
     pass
-
-
-SyncSession: "sessionmaker[Session]" = sessionmaker(bind=engine)
 
 
 class MessageModel(Base):

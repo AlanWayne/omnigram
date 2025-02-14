@@ -1,7 +1,8 @@
 import asyncio
 import logging
 import sys
-from .handler import handler
+
+from omnigram.server import serve
 
 logging.basicConfig(level=logging.INFO, stream=sys.stdout)
-asyncio.run(handler())
+asyncio.run(serve())
