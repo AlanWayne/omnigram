@@ -5,14 +5,12 @@ from aiogram import Bot
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import Command
-from aiogram.types import ChatMemberAdministrator, ChatMemberOwner
 from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
 from apscheduler.triggers.cron import CronTrigger  # type: ignore
 
 from omnigram.config import config
 from omnigram.database import MessageModel, get_session
-
-from .validators import validate_console, validate_minecraft_chat
+from .validators import validate_console, validate_minecraft_chat, validate_admin
 
 if TYPE_CHECKING:
     from aiogram import Dispatcher
@@ -89,13 +87,11 @@ class TelegramHandler:
         :return: None
         """
         messages = session.query(MessageModel).filter(MessageModel.deleted.is_(False)).all()
-
         for message in messages:
             try:
                 await self.bot.delete_message(chat_id=cast(int, message.chat_id), message_id=cast(int, message.id))
             except Exception as e:
                 print("Message delete:", e)
-
         session.query(MessageModel).filter(~MessageModel.deleted).update({MessageModel.deleted: True})
         session.commit()
 
@@ -132,51 +128,31 @@ class TelegramHandler:
         self.minecraft_server.launch()
         await asyncio.sleep(6)
         response2 = await message.answer("✅ Сервер запущен, приятной игры!")
-
         self.save_messages(message, response1, response2)
 
     @validate_console()
+    @validate_admin()
     async def command_terminate(self, message: "Message") -> None:
         """
-        Terminate command handler.
+        Terminate command handler - Admin rights are mandated
 
         :param message: aiogram "Message" model
         :return: None
         """
-        messages = [message]
-        if message.from_user:
-            user = await self.bot.get_chat_member(message.chat.id, message.from_user.id)
-
-            if isinstance(user, (ChatMemberAdministrator, ChatMemberOwner)):
-                response1 = await message.answer("⏳ Завершается работа сервера...")
-                await self.minecraft_server.terminate()
-                response2 = await message.answer("✅ Сервер выключен.")
-
-                messages.extend([response1, response2])
-
-            else:
-                response = await message.answer(
-                    "⚠️ У Вас нет прав на использование этой команды",
-                )
-
-                messages.append(response)
-        else:
-            response = await message.answer("⚠️ У Вас нет прав на использование этой команды")
-
-            messages.append(response)
-
-        self.save_messages(*messages)
+        response1 = await message.answer("⏳ Завершается работа сервера...")
+        await self.minecraft_server.terminate()
+        response2 = await message.answer("✅ Сервер выключен.")
+        self.save_messages(response1, response2)
 
     @validate_console()
     async def commant_status(self, message: "Message") -> None:
         """
-        Terminate command handler - Admin rights are mandated.
+        Status command handler.
 
         :param message: aiogram "Message" model
         :return: None
         """
         response = await message.answer(f"Статус сервера: {self.minecraft_server.status()}")
-
         self.save_messages(message, response)
 
     @validate_console()
@@ -189,16 +165,12 @@ class TelegramHandler:
         """
         if self.minecraft_server.status().startswith("Active"):
             output = await self.minecraft_server.list()
-
             if output == "0" or output is None:
                 response = await message.answer("👻 В данный момент сервер пуст.")
-
             else:
                 response = await message.answer(f"✅ Игроков на сервере: {output}.")
-
         else:
             response = await message.answer("⚠️ В данный момент сервер не работает.")
-
         self.save_messages(message, response)
 
     @validate_console()
@@ -235,7 +207,6 @@ class TelegramHandler:
         if message.from_user is not None:
             user = message.from_user.full_name
             text = message.text
-
             if text is not None:
                 if self.minecraft_server.status().startswith("Active"):
                     await self.minecraft_server.send_message_to_minecraft(user=user, text=text)
@@ -253,5 +224,4 @@ class TelegramHandler:
         response = await message.answer(
             f"⚠️ Неизвестная команда: {message.text}\nℹ️ Введите /help, чтобыполучить список доступных команд"
         )
-
         self.save_messages(message, response)
