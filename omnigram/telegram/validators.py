@@ -21,9 +21,9 @@ def validate_console():
 def validate_minecraft_chat():
     def decorator(func):
         @wraps(func)
-        async def wrapper(message: "Message", *args, **kwargs):
+        async def wrapper(self, message: "Message", *args, **kwargs):
             if message.message_thread_id == config.telegram.topic_mc_minecraft_chat:
-                return await func(message, *args, **kwargs)
+                return await func(self, message, *args, **kwargs)
 
         return wrapper
 
