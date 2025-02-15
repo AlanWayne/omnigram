@@ -10,7 +10,8 @@ from apscheduler.triggers.cron import CronTrigger  # type: ignore
 
 from omnigram.config import config
 from omnigram.database import MessageModel, get_session
-from .validators import validate_console, validate_minecraft_chat, validate_admin
+
+from .validators import validate_admin, validate_console, validate_minecraft_chat
 
 if TYPE_CHECKING:
     from aiogram import Dispatcher
@@ -142,7 +143,7 @@ class TelegramHandler:
         response1 = await message.answer("⏳ Завершается работа сервера...")
         await self.minecraft_server.terminate()
         response2 = await message.answer("✅ Сервер выключен.")
-        self.save_messages(response1, response2)
+        self.save_messages(message, response1, response2)
 
     @validate_console()
     async def commant_status(self, message: "Message") -> None:
