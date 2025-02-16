@@ -1,7 +1,7 @@
 # mypy: ignore-errors
 from functools import wraps
 
-from aiogram.types import Message, ChatMemberAdministrator, ChatMemberOwner
+from aiogram.types import ChatMemberAdministrator, ChatMemberOwner, Message
 
 from omnigram.config import config
 

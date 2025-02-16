@@ -18,7 +18,9 @@ if TYPE_CHECKING:
 
     from sqlalchemy.orm.session import Session
 
-engine = create_engine(f"sqlite:///{config.database.name}.db", echo=True)
+engine = create_engine(
+    f"sqlite:///{config.database.name}.db",
+)
 SyncSession: "sessionmaker[Session]" = sessionmaker(bind=engine)
 
 
