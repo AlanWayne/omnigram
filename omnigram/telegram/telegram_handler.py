@@ -53,7 +53,7 @@ class TelegramHandler:
         """
         dispatcher.message.register(self.command_help, Command(commands=["help"]))
         dispatcher.message.register(self.command_launch, Command(commands=["launch"]))
-        dispatcher.message.register(self.command_terminate, Command(commands=["terminate"]))
+        dispatcher.message.register(self.command_suspend, Command(commands=["suspend"]))
         dispatcher.message.register(self.commant_status, Command(commands=["status"]))
         dispatcher.message.register(self.command_list, Command(commands=["list"]))
         dispatcher.message.register(self.command_clear, Command(commands=["clear"]))
@@ -126,7 +126,7 @@ class TelegramHandler:
             "/launch — запускает сервер;\n"
             "/status — проверяет, запущен ли сервер;\n"
             "/list — выводит количество людей, играющих на сервере в данный момент;\n"
-            "/terminate — выключает сервер (требуются права администратора);\n"
+            "/suspend — выключает сервер (требуются права администратора);\n"
             "/clear — удаляет все сообщения в чате;\n"
             "/help — выводит список доступных команд;"
         )
@@ -147,15 +147,15 @@ class TelegramHandler:
 
     @validate_console()
     @validate_admin()
-    async def command_terminate(self, message: "Message") -> None:
+    async def command_suspend(self, message: "Message") -> None:
         """
-        Terminate command handler - Admin rights are mandated
+        Suspend command handler - Admin rights are mandated
 
         :param message: aiogram "Message" model
         :return: None
         """
         await self.send_message_to_console(message=message, text="⏳ Завершается работа сервера...")
-        await self.minecraft_server.command_terminate()
+        await self.minecraft_server.command_suspend()
         await self.send_message_to_console(message=message, text="✅ Сервер выключен.")
 
     @validate_console()
