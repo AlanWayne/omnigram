@@ -75,6 +75,7 @@ class MinecraftServer:
         if self._terminate_task is not None and not self._terminate_task.done():
             self._terminate_task.cancel()
             self._terminate_task = None
+            await self.send_message_to_telegram_console("🥳 Игрок онлайн, сервер продолжит работу.")
 
     async def send_message_to_telegram_console(self, text: str) -> "None":
         print(text)
