@@ -226,8 +226,6 @@ class TelegramHandler:
             if text is not None:
                 if self.minecraft_server.status():
                     await self.minecraft_server.send_message_to_minecraft(user=user, text=text)
-                else:
-                    await message.answer("⚠️ В данный момент сервер не работает.")
 
     @validate_console()
     async def command_invalid(self, message: "Message") -> None:
