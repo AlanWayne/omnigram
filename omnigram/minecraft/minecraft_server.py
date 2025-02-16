@@ -2,6 +2,9 @@ import asyncio
 import subprocess
 from typing import TYPE_CHECKING
 
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # type: ignore
+from apscheduler.triggers.interval import IntervalTrigger  # type: ignore
+
 from omnigram.config import config
 from omnigram.telegram import TelegramHandler
 
@@ -9,13 +12,20 @@ if TYPE_CHECKING:
     from asyncio import Task
     from asyncio.streams import StreamReader
 
+    from apscheduler.job import Job  # type: ignore
+
 
 class MinecraftServer:
     _server = None
     _launch_task: "Task | None" = None
-    _suspend_task: "Task | None" = None
+    _suspend_task_status: bool = False
     _people_online: int = 0
+    _people_online_list: str
     _telegram_handler: "TelegramHandler"
+    _idle_suspend_job: "Job | None" = None
+
+    def __init__(self) -> None:
+        self.scheduler = AsyncIOScheduler()
 
     def launch(self) -> None:
         if self._launch_task is None or self._launch_task.done():
@@ -40,7 +50,6 @@ class MinecraftServer:
                     await self._server.stdin.drain()
 
             await send_password()
-
             if self._server is not None and self._server.stdout is not None and self._server.stderr is not None:
                 asyncio.create_task(self._read_stream(self._server.stdout))
                 asyncio.create_task(self._read_stream(self._server.stderr))
@@ -49,12 +58,15 @@ class MinecraftServer:
         await self._suspend()
 
     async def idle_suspend(self) -> None:
-        if self._suspend_task is None or self._suspend_task.done():
+        if not self._suspend_task_status:
             await self.send_message_to_telegram_console("⏳ Сервер пуст, отключение через 5 минут.")
-            await asyncio.sleep(300)
-            await self.send_message_to_telegram_console("⏳ Завершается работа сервера после 5 минут простаивания...")
-            self._suspend_task = asyncio.create_task(self._suspend())
-            await self.send_message_to_telegram_console("✅ Сервер выключен.")
+            self._suspend_task_status = True
+            self._idle_suspend_job = self.scheduler.add_job(self._idle_suspend, IntervalTrigger(minutes=5))
+
+    async def _idle_suspend(self) -> None:
+        await self.send_message_to_telegram_console("⏳ Завершается работа сервера после 5 минут простаивания...")
+        asyncio.create_task(self._suspend())
+        await self.send_message_to_telegram_console("✅ Сервер выключен.")
 
     async def _suspend(self) -> None:
         if self._server is not None and self._server.stdin is not None:
@@ -63,6 +75,8 @@ class MinecraftServer:
             await asyncio.sleep(5)
             await self._server.wait()
             self._server = None
+            self._suspend_task_status = False
+            self._idle_suspend_job = None
 
         if self._launch_task and not self._launch_task.done():
             self._launch_task.cancel()
@@ -72,9 +86,9 @@ class MinecraftServer:
                 pass
 
     async def on_player_join(self) -> None:
-        if self._suspend_task is not None and not self._suspend_task.done():
-            self._suspend_task.cancel()
-            self._suspend_task = None
+        if self._suspend_task_status and self._idle_suspend_job is not None:
+            self.scheduler.remove_job(job_id=self._idle_suspend_job.id)
+            self._suspend_task_status = False
             await self.send_message_to_telegram_console("🥳 Игрок онлайн, сервер продолжит работу.")
 
     async def send_message_to_telegram_console(self, text: str) -> "None":
@@ -105,27 +119,27 @@ class MinecraftServer:
             output = line.decode().strip()
             if "of a max of 20 players online" in output:
                 self._people_online = int(output.split()[5]) if output.split()[5] is not None else 0
+                self._people_online_list = " ".join(output.split()[13:]) if self._people_online > 0 else " "
             elif "Server empty for 60 seconds, pausing" in output:
                 await self.idle_suspend()
             elif "[Not Secure] <" in output:
                 await self.send_message_from_minecraft_to_telegram(text=output)
             elif "logged in with entity id" in output:
                 await self.on_player_join()
-            else:
-                print(output)
+            print(output)
 
-    def status(self) -> str:
+    def status(self) -> bool:
         if self._server is not None:
-            return "Active ✅"
-        return "Terminated ❌"
+            return True
+        return False
 
-    async def list(self) -> int | None:
+    async def list(self) -> "tuple[int | None, str | None]":
         if self._server is not None and self._server.stdin is not None:
             self._server.stdin.write("list\n".encode())
             await self._server.stdin.drain()
             await asyncio.sleep(1)
-            return self._people_online
-        return None
+            return self._people_online, self._people_online_list
+        return None, None
 
     def __del__(self) -> None:
         asyncio.run(self._suspend())

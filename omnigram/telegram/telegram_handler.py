@@ -166,7 +166,10 @@ class TelegramHandler:
         :param message: aiogram "Message" model
         :return: None
         """
-        await self.send_message_to_console(message=message, text=f"Статус сервера: {self.minecraft_server.status()}")
+        if self.minecraft_server.status():
+            await self.send_message_to_console(message=message, text="Сервер работает ✅")
+        else:
+            await self.send_message_to_console(message=message, text="Сервер не работает ❌")
 
     @validate_console()
     async def command_list(self, message: "Message") -> None:
@@ -176,12 +179,13 @@ class TelegramHandler:
         :param message: aiogram "Message" model
         :return: None
         """
-        if self.minecraft_server.status().startswith("Active"):
-            output = await self.minecraft_server.list()
-            if output == "0" or output is None:
+        if self.minecraft_server.status():
+            number, names = await self.minecraft_server.list()
+            if number == "0" or number is None:
                 await self.send_message_to_console(message=message, text="👻 В данный момент сервер пуст.")
             else:
-                await self.send_message_to_console(message=message, text=f"✅ Игроков на сервере: {output}.")
+                await self.send_message_to_console(message=message, text=f"✅ Игроков на сервере: {number}.")
+                await self.send_message_to_console(message=message, text=f"{names}")
         else:
             await self.send_message_to_console(message=message, text="⚠️ В данный момент сервер не работает.")
 
@@ -220,7 +224,7 @@ class TelegramHandler:
             user = message.from_user.full_name
             text = message.text
             if text is not None:
-                if self.minecraft_server.status().startswith("Active"):
+                if self.minecraft_server.status():
                     await self.minecraft_server.send_message_to_minecraft(user=user, text=text)
                 else:
                     await message.answer("⚠️ В данный момент сервер не работает.")
